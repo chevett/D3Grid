@@ -52,7 +52,7 @@ function _create(opt) {
 
 			opt.rows = data;
 			opt.totalRowCount = totalRows;
-			pageCache[pageAndSortParameters.PageIndex] = opt; // um this is not ideal
+			pageCache[pageIndex] = _.cloneDeep(opt); // um this is not ideal, deal with it
 
 			table.render(opt);
 			pager.render(opt);
@@ -70,7 +70,7 @@ function _create(opt) {
 
 		if (pageCache[pageAndSortParameters.PageIndex]) {
 			var gridData = pageCache[pageAndSortParameters.PageIndex];
-			
+
 			//d3G.Modals.Loading.hide({ showCurtain: false, selector: opt.containerSelector });
 			table.render(gridData);
 			pager.render(gridData);
