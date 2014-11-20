@@ -15,5 +15,10 @@
   "bugs": {
     "url": "https://github.com/chevett/D3Grid/issues"
   },
-  "homepage": "https://github.com/chevett/D3Grid"
+  "homepage": "https://github.com/chevett/D3Grid",
+  "dependencies": {
+    "d3": "^3.4.13",
+    "jquery": "^2.1.1",
+    "lodash": "^2.4.1"
+  }
 }
