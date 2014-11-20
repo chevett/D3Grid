@@ -1,0 +1,19 @@
+{
+  "name": "D3Grid",
+  "version": "1.0.0",
+  "description": "[![Build Status](http://teamcity.codebetter.com/app/rest/builds/buildType:%28id:bt979%29/statusIcon)](http://teamcity.codebetter.com/viewType.html?buildTypeId=bt979&guest=1)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chevett/D3Grid.git"
+  },
+  "author": "",
+  "license": "'",
+  "bugs": {
+    "url": "https://github.com/chevett/D3Grid/issues"
+  },
+  "homepage": "https://github.com/chevett/D3Grid"
+}
