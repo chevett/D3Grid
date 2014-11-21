@@ -44,9 +44,9 @@ function getData(data, columnName){
 	return getData(data[prop], parts.join('.'));
 }
 
-function _create(opt) {
+function _create(opt, el) {
 	createHeader(opt);
-	$(opt.tableSelector).wrap('<div class="d3g-table-wrapper" />');
+	$(opt.tableSelector, el).wrap('<div class="d3g-table-wrapper" />');
 
 	var sortChangedCallbacks = $.Callbacks(),
 		sortColumnName = opt.defaultSortColumn || '',
@@ -94,11 +94,11 @@ function _create(opt) {
 			var visibleColumns = data.columns.filter(function (column) { 
 				return column.includeType === undefined || column.includeType === 'Column';
 			});
-			var $table = $(opt.tableSelector);
+			var $table = $(opt.tableSelector, el);
 			$table.empty();
 			var tableStyling = getTableStyling(opt);
 
-			var table = d3.select(opt.tableSelector)
+			var table = d3.select($table[0])
 				.classed(tableStyling, true);
 
 			var tableHeader = table

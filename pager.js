@@ -3,7 +3,7 @@
 var $ = require('jquery'),
 	d3 = require('d3');
 
-function _create(opt) {
+function _create(opt, el) {
 
 	var pageSizeOptions = [10, 20, 50],
 		pageIndex = 0,
@@ -155,13 +155,13 @@ function _create(opt) {
 
 	return {
 		render: function (data) {
-			console.dir(data);
 			var pagerContainer = {},
 				wrapperPagerObject = [{ classed: 'd3g-pager-wrapper' }],
 				topWrapperObject = { classed: 'd3g-pager-top-wrapper' },
 				pagerTopWrapper = {};
 
-			pagerContainer = d3.select(opt.pagerSelector)
+			var $pager = $(opt.pagerSelector, el);
+			pagerContainer = d3.select($pager[0])
 				.classed('d3g-pager', true)
 				.selectAll('div')
 				.data(wrapperPagerObject);

@@ -20,10 +20,13 @@ function _create(opt) {
 
 	opt = _.extend({},  DEFAULTS, opt);
 
-	d3.select(opt.containerSelector).classed("d3g-container loading-content-container", true);
+	var $el = $('<div><table class="lgtm-table"></table><div class="lgtm-pager"></div></div>');
+	
 
-	var table = createTable(opt),
-		pager = createPager(opt),
+	d3.select($el[0]).classed("d3g-container loading-content-container", true);
+
+	var table = createTable(opt, $el),
+		pager = createPager(opt, $el),
 		pageCache;
 
 	function _getPageAndSortParameters() {
@@ -90,6 +93,7 @@ function _create(opt) {
 	});
 
 	return {
+		element: $el[0],
 		table: table,
 		pager: pager,
 		render: function () {
