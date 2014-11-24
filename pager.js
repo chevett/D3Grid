@@ -1,15 +1,17 @@
-﻿/*jshint undef:true, es5:true, camelcase:true, forin:true, curly:true, eqeqeq:true */
+﻿var $ = require('jquery'),
+	d3 = require('d3'),
+	EventEmitter = require('events').EventEmitter,
+	util = require('util');
 
-var $ = require('jquery'),
-	d3 = require('d3');
+function Pager(opt, el) {
+	if (!(this instanceof Pager)) return new Pager(opt, el);
 
-function _create(opt, el) {
+	EventEmitter.call(this);
 
-	var pageSizeOptions = [10, 20, 50],
+	var self = this,
+		pageSizeOptions = [10, 20, 50],
 		pageIndex = 0,
 		pageSize = pageSizeOptions[0],
-		pageChangedCallbacks = $.Callbacks(),
-		pageSizeChangedCallbacks = $.Callbacks(),
 		totalPages = 0,
 		currentPage = 0;
 
@@ -33,8 +35,9 @@ function _create(opt, el) {
 		pagerSizerSelectElement
 			.on('change', function () {
 				d3.event.preventDefault();
+
 				pageSize = $(this).val();
-				pageSizeChangedCallbacks.fire();
+				self.emit('page-size', {pageSize: pageSize});
 			})
 			.selectAll('option')
 			.data(pageSizeOptions)
@@ -73,11 +76,12 @@ function _create(opt, el) {
 			.on('click', function (button) {
 				d3.event.preventDefault();
 				button.UpdatePageIndex();
-				pageChangedCallbacks.fire();
+
+				self.emit('page', {pageIndex: pageIndex, pageSize: pageSize});
 			});
 	}
 
-	function _createCurrentPageMessage(pagerContainer, data) {
+	function _createCurrentPageMessage(pagerContainer) {
 
 		var pagerMessageWrapperObj = { classed: 'd3g-pager-message' };
 
@@ -103,12 +107,12 @@ function _create(opt, el) {
 			});
 	}
 
-	function _createFooterToolbar(pagerContainer, data) {
+	function _createFooterToolbar(pagerContainer) {
 		var footerToolbarObj = { classed: 'd3g-pager-toolbar' };
 		var footerToolbarContainer = createSingleDomElement(pagerContainer, footerToolbarObj);
 
-		if (data.footerText) {
-			_createFooterText(footerToolbarContainer, data.footerText);
+		if (opt.footerText) {
+			_createFooterText(footerToolbarContainer, opt.footerText);
 		}
 
 		//toolsWrapperClassObj = { classed: 'd3g-pager-toolbar-tools' };
@@ -130,12 +134,6 @@ function _create(opt, el) {
 
 	}
 
-
-	/*
-	 * Helper: Includes d3Container, data = {'classed' = 'class-name'}
-	 *and options elementName string (defaults to 'div')
-	 *
-	 */
 	function createSingleDomElement(container, data, elementName) {
 
 		elementName = elementName || 'div';
@@ -153,57 +151,41 @@ function _create(opt, el) {
 	}
 
 
-	return {
-		render: function (data) {
-			var pagerContainer = {},
-				wrapperPagerObject = [{ classed: 'd3g-pager-wrapper' }],
-				topWrapperObject = { classed: 'd3g-pager-top-wrapper' },
-				pagerTopWrapper = {};
+	self.render = function (data) {
+		var pagerContainer = {},
+			wrapperPagerObject = [{ classed: 'd3g-pager-wrapper' }],
+			topWrapperObject = { classed: 'd3g-pager-top-wrapper' },
+			pagerTopWrapper = {};
 
-			var $pager = $(opt.pagerSelector, el);
-			pagerContainer = d3.select($pager[0])
-				.classed('d3g-pager', true)
-				.selectAll('div')
-				.data(wrapperPagerObject);
-			
-			pagerContainer
-				.enter()
-				.append('div')
-				.attr('class', function(d) { return d.classed; });
+		var $pager = $(opt.pagerSelector, el);
+		pagerContainer = d3.select($pager[0])
+			.classed('d3g-pager', true)
+			.selectAll('div')
+			.data(wrapperPagerObject);
+		
+		pagerContainer
+			.enter()
+			.append('div')
+			.attr('class', function(d) { return d.classed; });
 
+		pagerTopWrapper = createSingleDomElement(pagerContainer, topWrapperObject);
 
-			pagerTopWrapper = createSingleDomElement(pagerContainer, topWrapperObject);
+		totalPages = Math.ceil(data.totalRowCount / pageSize);
+		currentPage = pageIndex + 1; //taking into account the zeroth page
 
-			totalPages = Math.ceil(data.totalRowCount / pageSize);
-			currentPage = pageIndex + 1; //taking into account the zeroth page
+		_createPageNavigation(pagerTopWrapper);
+		_createPageSizer(pagerTopWrapper);
+		_createCurrentPageMessage(pagerTopWrapper);
+		_createFooterToolbar(pagerContainer, data);
+	};
 
-			_createPageNavigation(pagerTopWrapper);
-			_createPageSizer(pagerTopWrapper);
-			_createCurrentPageMessage(pagerTopWrapper, data);
-			_createFooterToolbar(pagerContainer, data);
-		},
-		pageChanged: {
-			addHandler: function (cb) { pageChangedCallbacks.add(cb); },
-			removeHandler: function (cb) { pageChangedCallbacks.remove(cb); }
-		},
-		pageSizeChanged: {
-			addHandler: function (cb) { pageSizeChangedCallbacks.add(cb); },
-			removeHandler: function (cb) { pageSizeChangedCallbacks.remove(cb); }
-		},
-
-		getPageParameters: function () {
-			return {
-				PageIndex: pageIndex,
-				PageSize: pageSize,
-			};
-		},
-
-		reset: function () {
-			totalPages = 0;
-			currentPage = 1;
-			pageIndex = 0;
-		}
+	self.reset = function () {
+		totalPages = 0;
+		currentPage = 1;
+		pageIndex = 0;
 	};
 }
 
-module.exports = _create;
+util.inherits(Pager, EventEmitter);
+
+module.exports = Pager;

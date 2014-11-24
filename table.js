@@ -1,7 +1,7 @@
-﻿/*jshint undef:true, es5:true, camelcase:true, forin:true, curly:true, eqeqeq:true */
-
-var $ = require('jquery'),
+﻿var $ = require('jquery'),
+	EventEmitter = require('events').EventEmitter,
 	_ = require('lodash'),
+	util = require('util'),
 	moment = require('moment'),
 	d3 = require('d3');
 
@@ -38,18 +38,21 @@ function getData(data, columnName){
 		return data;
 
 	var parts = columnName.split('.').filter(Boolean);
-	var prop = _.first(columnName.split('.'));
+	var prop = _.first(parts);
 	parts = _.rest(parts);
 
 	return getData(data[prop], parts.join('.'));
 }
 
-function _create(opt, el) {
-	createHeader(opt);
-	$(opt.tableSelector, el).wrap('<div class="d3g-table-wrapper" />');
+function Table(opt, el) {
+	var self = this;
+	if (!(self instanceof Table)) return new Table(opt, el);
 
-	var sortChangedCallbacks = $.Callbacks(),
-		sortColumnName = opt.defaultSortColumn || '',
+	EventEmitter.call(this);
+
+	createHeader(opt);
+
+	var sortColumnName = opt.defaultSortColumn || '',
 		sortAscending = (opt.defaultSortDirection && opt.defaultSortDirection === 'Descending') ? false : true,
 		formatters = {
 			plainText: function (txt) { return txt; },
@@ -57,143 +60,120 @@ function _create(opt, el) {
 			date: function(d){ return moment(d).format('MMMM D YYYY, hh:mma'); },
 			currency: function (txt) { return txt; },
 			html: function (txt) { return $('<div />').html(txt).text(); },
-			handlebars: (function () {
-				var templates = {};
-
-				return function (str, obj) {
-					var f = templates[str] || (templates[str] = handlebars.compile($('<div />').html(str).text()));
-					return f(obj);
-				};
-			})()
 		};
 
-	formatters = $.extend(opt.formatters || {}, formatters);
+	formatters = _.extend(opt.formatters || {}, formatters);
 
-	$(opt.tableSelector).on('click', 'th.d3g-sortable', function () {
-		var $selectedColumn = $(this),
-			selectedColumnName = $selectedColumn.data('sort-column'),
-			isActiveSort = $selectedColumn.hasClass('d3g-sort-active');
-
-		// handle tracking sort column and direction here.
-		sortColumnName = selectedColumnName;
-		sortAscending = isActiveSort ? !sortAscending : true;
-
-		sortChangedCallbacks.fire();
-	});
-
-	if (opt.onCellClick) {
-		$(opt.tableSelector).on('click', 'tbody tr td', function () {
-			var cell = this;
-			opt.onCellClick(cell);
+	var currentSortColumn;
+	
+	self.render = function (data) {
+		var visibleColumns = opt.columns.filter(function (column) { 
+			return column.includeType === undefined || column.includeType === 'Column';
 		});
-	}
 
-	return {
-		render: function (data) {
+		var $table = $(opt.tableSelector, el);
+		$table.empty();
+		var tableStyling = getTableStyling(opt);
 
-			var visibleColumns = data.columns.filter(function (column) { 
-				return column.includeType === undefined || column.includeType === 'Column';
-			});
-			var $table = $(opt.tableSelector, el);
-			$table.empty();
-			var tableStyling = getTableStyling(opt);
+		var table = d3.select($table[0])
+			.classed(tableStyling, true);
 
-			var table = d3.select($table[0])
-				.classed(tableStyling, true);
+		var tableHeader = table
+				.append('thead')
+				.classed('d3g-table-header', true)
+				.append('tr')
+				.selectAll('th')
+				.data(visibleColumns)
+				.enter()
+				.append('th')
+				.attr('class', function (d) {
 
-			var tableHeader = table
-					.append('thead')
-					.classed('d3g-table-header', true)
-					.append('tr')
-					.selectAll('th')
-					.data(visibleColumns)
-					.enter()
-					.append('th')
-					.attr('class', function (d) {
+					var classValues = 'd3g-header-' + d.index;
 
-						var classValues = 'd3g-header-' + d.index;
+					if (d.isSortable === true) {
+						classValues = classValues + ' d3g-sortable';
+					}
 
-						if (d.isSortable === true) {
-							classValues = classValues + ' d3g-sortable';
+					if (d.sortColumnName === sortColumnName) {
+						classValues = classValues + ' d3g-sort-active';
+
+						if (sortAscending) {
+							classValues = classValues + ' d3g-sort-asc';
+						} else {
+							classValues = classValues + ' d3g-sort-desc';
 						}
+					}
 
-						if (d.sortColumnName === sortColumnName) {
-							classValues = classValues + ' d3g-sort-active';
+					return classValues;
+				})
+				.attr('data-sort-column', function (d) {
+					if (d.isSortable === true) {
+						return d.sortColumnName;
+					}
+				})
+				.html(function (d) {
+					var content = d.label || d.name;
+					// add sort icon
+					if (d.isSortable === true) {
+						content += '<span class="text-icon d3g-sort-icon"></span>';
+					}
+					return content;
 
-							if (sortAscending) {
-								classValues = classValues + ' d3g-sort-asc';
-							} else {
-								classValues = classValues + ' d3g-sort-desc';
-							}
-						}
+				})
+				.click(function(d){
+					if (!d.isSortable) return;
 
-						return classValues;
-					})
-					.attr('data-sort-column', function (d) {
-						if (d.isSortable === true) {
-							return d.sortColumnName;
-						}
-					})
-					.html(function (d) {
-						var content = d.label || d.name;
-						// add sort icon
-						if (d.isSortable === true) {
-							content += '<span class="text-icon d3g-sort-icon"></span>';
-						}
-						return content;
+					var selectedColumnName = d.sortColumnName,
+						sortAscending = selectedColumnName == sortColumnName;
 
-					});
+					if (sortAscending){
+						currentSortColumn = '';
+					}
 
-			var tableBody = table.append('tbody');
+					sortColumnName = selectedColumnName;
 
-			var rows = tableBody.selectAll('tr')
-					.data(data.rows)
-					.enter()
-					.append('tr');
+					self.emit('sort', { sortColumnName: sortColumnName, sortAscending: sortAscending });
+				});
 
-			var cells = rows.selectAll('td')
-					.data(visibleColumns)
-					.enter()
-					.append('td')
-					.attr('class', function (d) { return 'd3g-content-' + d.index; })
-					.html(function (d, columnIndex, rowIndex) {
+		var tableBody = table.append('tbody');
 
-						var columnName = d.name,
-							rowData = data.rows[rowIndex],
-							datum = getData(rowData, columnName),
-							customFormatter;
+		var rows = tableBody.selectAll('tr')
+				.data(data)
+				.enter()
+				.append('tr');
 
-						// check for a custom formatter from the create options
-						if (formatters.custom) {
-							customFormatter = formatters.custom[columnName];
+		var cells = rows.selectAll('td')
+				.data(visibleColumns)
+				.enter()
+				.append('td')
+				.attr('class', function (d) { return 'd3g-content-' + d.index; })
+				.html(function (d, columnIndex, rowIndex) {
 
-							if (typeof customFormatter === 'function') {
-								return customFormatter(datum, rowData);
-							}
-						}
+					var columnName = d.name,
+						rowData = rows[rowIndex],
+						datum = getData(rowData, columnName),
+						customFormatter;
 
-						// check for a custom formatter on the column object.
-						customFormatter = d.formatter;
+					// check for a custom formatter from the create options
+					if (formatters.custom) {
+						customFormatter = formatters.custom[columnName];
+
 						if (typeof customFormatter === 'function') {
 							return customFormatter(datum, rowData);
 						}
+					}
 
-						return formatters[d.format || 'plainText'](datum, rowData);
-					});
-		},
+					// check for a custom formatter on the column object.
+					customFormatter = d.formatter;
+					if (typeof customFormatter === 'function') {
+						return customFormatter(datum, rowData);
+					}
 
-		sortColumnChanged: {
-			addHandler: function (cb) { sortChangedCallbacks.add(cb); },
-			removeHandler: function (cb) { sortChangedCallbacks.remove(cb); }
-		},
-		getSortParameters: function () {
-			return {
-				SortColumnName: sortColumnName,
-				SortOrder: sortAscending ? 'Ascending' : 'Descending'
-			};
-		}
+					return formatters[d.format || 'plainText'](datum, rowData);
+				});
 	};
 }
 
-module.exports = _create;
+util.inherits(Table, EventEmitter);
+module.exports = Table;
 

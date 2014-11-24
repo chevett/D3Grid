@@ -1,10 +1,4 @@
-﻿/*jshint undef:true, es5:true, camelcase:true, forin:true, curly:true, eqeqeq:true */
-
-/// <reference path="Scripts/jquery-1.9.1.intellisense.js" />
-/// <reference path="Scripts/d3.v3.js" />
-
-
-var $ = require('jquery'),
+﻿var $ = require('jquery'),
 	d3 = require('d3'),
 	_ = require('lodash'),
 	createTable = require('./table'),
@@ -16,21 +10,21 @@ var DEFAULTS = {
 	fetchRows: function(){console.dir('implement grid.fetchRows');},
 };
 
-function _create(opt) {
+function Grid(opt) {
+	if (!(this instanceof Grid)) return new Grid(opt);
 
 	opt = _.extend({},  DEFAULTS, opt);
 
-	var $el = $('<div><table class="lgtm-table"></table><div class="lgtm-pager"></div></div>');
-	
-
 	d3.select($el[0]).classed("d3g-container loading-content-container", true);
 
-	var table = createTable(opt, $el),
+	var $el = $('<div><table class="lgtm-table"></table><div class="lgtm-pager"></div></div>'),
+		self = this,
+		table = createTable(opt, $el),
 		pager = createPager(opt, $el),
 		pageCache;
 
 	function _getPageAndSortParameters() {
-		var pageAndSortParams = $.extend({}, table.getSortParameters(), pager.getPageParameters());
+		var pageAndSortParams = _.extend({}, table.getSortParameters(), pager.getPageParameters());
 
 		if (typeof opt.customParams === 'function') {
 			pageAndSortParams = opt.customParams(pageAndSortParams);
@@ -40,8 +34,6 @@ function _create(opt) {
 	}
 
 	function _startDataLoad(pageAndSortParameters) {
-		//d3G.Modals.Loading.show({ showCurtain: false, selector: opt.containerSelector });
-
 		pageAndSortParameters = pageAndSortParameters || _getPageAndSortParameters();
 
 		var pageIndex = pageAndSortParameters.PageIndex,
@@ -55,14 +47,14 @@ function _create(opt) {
 
 			opt.rows = data;
 			opt.totalRowCount = totalRows;
-			pageCache[pageIndex] = _.cloneDeep(opt); // um this is not ideal, deal with it
+			pageCache[pageIndex] = data;
 
-			table.render(opt);
-			pager.render(opt);
+			table.render(data);
+			pager.render(data);
 		});
 	}
 
-	table.sortColumnChanged.addHandler(function () {
+	table.on('sort', function () {
 		pageCache = {};
 		pager.reset();
 		_startDataLoad();
@@ -74,7 +66,6 @@ function _create(opt) {
 		if (pageCache[pageAndSortParameters.PageIndex]) {
 			var gridData = pageCache[pageAndSortParameters.PageIndex];
 
-			//d3G.Modals.Loading.hide({ showCurtain: false, selector: opt.containerSelector });
 			table.render(gridData);
 			pager.render(gridData);
 		} else {
@@ -82,27 +73,20 @@ function _create(opt) {
 		}
 	}
 
-	pager.pageChanged.addHandler(function () {
-		changePage();
-	});
-
-	pager.pageSizeChanged.addHandler(function () {
+	pager.on('page', changePage);
+	pager.on('page-size', function () {
 		pageCache = {};
 		pager.reset();
 		_startDataLoad();
 	});
 
-	return {
-		element: $el[0],
-		table: table,
-		pager: pager,
-		render: function () {
-			pageCache = {};
-			pager.reset();
-			_startDataLoad();
-		}
+	self.element = $el[0];
+	self.update = self.render = function(){
+		pageCache = {};
+		pager.reset();
+		_startDataLoad();
 	};
 }
 
-module.exports = _create;
+module.exports = Grid;
 
