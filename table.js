@@ -150,7 +150,10 @@ function _create(opt, el) {
 			var rows = tableBody.selectAll('tr')
 					.data(data.rows)
 					.enter()
-					.append('tr');
+					.append('tr')
+					.each(function(d){
+						$(this).data('row', d); // um okay
+					});
 
 			var cells = rows.selectAll('td')
 					.data(visibleColumns)
