@@ -1,10 +1,4 @@
-﻿/*jshint undef:true, es5:true, camelcase:true, forin:true, curly:true, eqeqeq:true */
-
-/// <reference path="Scripts/jquery-1.9.1.intellisense.js" />
-/// <reference path="Scripts/d3.v3.js" />
-
-
-var $ = require('jquery'),
+﻿var $ = require('jquery'),
 	d3 = require('d3'),
 	_ = require('lodash'),
 	createTable = require('./table'),
@@ -39,6 +33,16 @@ function _create(opt) {
 		return pageAndSortParams;
 	}
 
+	var _criteria = Object.create(null);
+	function _setCriteria(name, value){
+		if (_.isObject(name)){
+			_criteria = name;
+			return;
+		} else {
+			_criteria[name] = value;
+		}
+	}
+
 	function _startDataLoad(pageAndSortParameters) {
 		//d3G.Modals.Loading.show({ showCurtain: false, selector: opt.containerSelector });
 
@@ -47,7 +51,11 @@ function _create(opt) {
 		var pageIndex = pageAndSortParameters.PageIndex,
 			pageSize = pageAndSortParameters.PageSize;
 
-		opt.fetchRows(pageIndex, pageSize, function(err, data, totalRows){
+		var criteria = _.extend({}, _criteria);
+		criteria.pageIndex = pageIndex;
+		criteria.pageSize = pageSize;
+
+		opt.fetchRows(criteria, function(err, data, totalRows){
 			if (err){
 				console.error(err);
 				return window.alert('grid error');
@@ -100,7 +108,8 @@ function _create(opt) {
 			pageCache = {};
 			pager.reset();
 			_startDataLoad();
-		}
+		},
+		setCriteria: _setCriteria,
 	};
 }
 
