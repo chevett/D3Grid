@@ -110,6 +110,13 @@ function _create(opt) {
 			_startDataLoad();
 		},
 		setCriteria: _setCriteria,
+		getCurrentData: function(){
+			return _.chain(pageCache)
+				.values()
+				.pluck('rows')
+				.flatten()
+				.value();
+		},
 	};
 }
 
