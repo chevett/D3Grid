@@ -89,8 +89,32 @@ function _create(opt, el) {
 		});
 	}
 
+
 	return {
 		render: function (data) {
+			function _getTableCellValue(d, columnIndex, rowIndex) {
+				var columnName = d.name,
+					rowData = data.rows[rowIndex],
+					datum = getData(rowData, columnName),
+					customFormatter;
+
+				// check for a custom formatter from the create options
+				if (formatters.custom) {
+					customFormatter = formatters.custom[columnName];
+
+					if (typeof customFormatter === 'function') {
+						return customFormatter(datum, rowData);
+					}
+				}
+
+				// check for a custom formatter on the column object.
+				customFormatter = d.formatter;
+				if (typeof customFormatter === 'function') {
+					return customFormatter(datum, rowData);
+				}
+
+				return formatters[d.format || 'plainText'](datum, rowData);
+			}
 
 			var visibleColumns = data.columns.filter(function (column) { 
 				return column.includeType === undefined || column.includeType === 'Column';
@@ -160,29 +184,14 @@ function _create(opt, el) {
 					.enter()
 					.append('td')
 					.attr('class', function (d) { return 'd3g-content-' + d.index; })
-					.html(function (d, columnIndex, rowIndex) {
+					.each(function (d, columnIndex, rowIndex) {
+						var value = _getTableCellValue(d, columnIndex, rowIndex);
 
-						var columnName = d.name,
-							rowData = data.rows[rowIndex],
-							datum = getData(rowData, columnName),
-							customFormatter;
-
-						// check for a custom formatter from the create options
-						if (formatters.custom) {
-							customFormatter = formatters.custom[columnName];
-
-							if (typeof customFormatter === 'function') {
-								return customFormatter(datum, rowData);
-							}
+						if (value instanceof HTMLElement) {
+							this.appendChild(value);
+						} else {
+							d3.select(this).html(value);
 						}
-
-						// check for a custom formatter on the column object.
-						customFormatter = d.formatter;
-						if (typeof customFormatter === 'function') {
-							return customFormatter(datum, rowData);
-						}
-
-						return formatters[d.format || 'plainText'](datum, rowData);
 					});
 		},
 
