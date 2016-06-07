@@ -117,6 +117,9 @@ function _create(opt, el) {
 			}
 
 			var visibleColumns = data.columns.filter(function (column) { 
+				if (typeof column.isVisible === 'function'){
+					return column.isVisible();
+				}
 				return column.includeType === undefined || column.includeType === 'Column';
 			});
 			var $table = $(opt.tableSelector, el);
