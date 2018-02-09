@@ -93,11 +93,11 @@ function _create(opt, el) {
 
 		var items = pageMessage.selectAll('span')
 			.data(pageData);
-		items
+		const newItems = items
 			.enter()
 			.append('span')
 			.attr('class', function (d) { return d.Selector; });
-		items
+		items.merge(newItems)
 			.text(function (d) {
 				return d.Content;
 			});
@@ -144,14 +144,13 @@ function _create(opt, el) {
 			.selectAll('.' + data.classed)
 			.data([data]);
 
-		domElement
+		const newDomElement = domElement
 			.enter()
 			.append(elementName)
 			.attr('class', function (d) { return d.classed; });
 
-		return domElement;
+		return domElement.merge(newDomElement);
 	}
-
 
 	return {
 		render: function (data) {
@@ -165,13 +164,13 @@ function _create(opt, el) {
 				.classed('d3g-pager', true)
 				.selectAll('div')
 				.data(wrapperPagerObject);
-			
-			pagerContainer
+
+			const newPagerContainer = pagerContainer
 				.enter()
 				.append('div')
 				.attr('class', function(d) { return d.classed; });
 
-
+			pagerContainer = newPagerContainer.merge(pagerContainer);
 			pagerTopWrapper = createSingleDomElement(pagerContainer, topWrapperObject);
 
 			totalPages = Math.ceil(data.totalRowCount / pageSize);

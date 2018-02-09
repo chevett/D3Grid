@@ -93,7 +93,14 @@ function _create(opt, el) {
 
 	return {
 		render: function (data) {
-			function _getTableCellValue(d, columnIndex, rowIndex) {
+			var visibleColumns = data.columns.filter(function (column) { 
+				if (typeof column.isVisible === 'function'){
+					return column.isVisible();
+				}
+				return column.includeType === undefined || column.includeType === 'Column';
+			});
+			function _getTableCellValue(columnIndex, rowIndex) {
+				const d = visibleColumns[columnIndex];
 				var columnName = d.name,
 					rowData = data.rows[rowIndex],
 					datum = getData(rowData, columnName),
@@ -117,12 +124,6 @@ function _create(opt, el) {
 				return formatters[d.format || 'plainText'](datum, rowData);
 			}
 
-			var visibleColumns = data.columns.filter(function (column) { 
-				if (typeof column.isVisible === 'function'){
-					return column.isVisible();
-				}
-				return column.includeType === undefined || column.includeType === 'Column';
-			});
 			var $table = $(opt.tableSelector, el);
 			$table.empty();
 			var tableStyling = getTableStyling(opt);
@@ -183,19 +184,23 @@ function _create(opt, el) {
 						$(this).data('row', d); // um okay
 					});
 
+			var rowIndexLocal = d3.local();
 			var cells = rows.selectAll('td')
 					.data(visibleColumns)
 					.enter()
 					.append('td')
 					.attr('class', function (d) { return 'd3g-content-' + d.index; })
-					.each(function (d, columnIndex, rowIndex) {
-						var value = _getTableCellValue(d, columnIndex, rowIndex);
+					.html(function(d, columnIndex, a, b) {
+						const rowIndex = rowIndexLocal.get(d) || 0;
+						rowIndexLocal.set(d, rowIndex + 1);
+
+						const value = _getTableCellValue(columnIndex, rowIndex);
 
 						if (value instanceof HTMLElement) {
-							this.appendChild(value);
-						} else {
-							d3.select(this).html(value);
+							console.log('YES HTMLElement in D3Grid');
 						}
+
+						return value;
 					});
 		},
 
