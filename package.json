@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/chevett/D3Grid",
   "dependencies": {
-    "d3": "^3.4.13",
+    "d3": "^4.13.0",
     "jquery": "^2.1.1",
     "lodash": "^2.4.1",
     "moment": "^2.11.1"
