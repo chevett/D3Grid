@@ -184,24 +184,24 @@ function _create(opt, el) {
 						$(this).data('row', d); // um okay
 					});
 
-			var rowIndexLocal = d3.local();
-			var cells = rows.selectAll('td')
-					.data(visibleColumns)
-					.enter()
-					.append('td')
-					.attr('class', function (d) { return 'd3g-content-' + d.index; })
-					.html(function(d, columnIndex, a, b) {
-						const rowIndex = rowIndexLocal.get(d) || 0;
-						rowIndexLocal.set(d, rowIndex + 1);
+			const rowIndexLocal = d3.local();
+			rows.selectAll('td')
+				.data(visibleColumns)
+				.enter()
+				.append('td')
+				.attr('class', function (d) { return 'd3g-content-' + d.index; })
+				.each(function(d, columnIndex) {
+					const rowIndex = rowIndexLocal.get(d) || 0;
+					rowIndexLocal.set(d, rowIndex + 1);
 
-						const value = _getTableCellValue(columnIndex, rowIndex);
+					const value = _getTableCellValue(columnIndex, rowIndex);
+					if (value instanceof HTMLElement) {
+						this.appendChild(value);
+					} else {
+						d3.select(this).html(value);
+					}
 
-						if (value instanceof HTMLElement) {
-							console.log('YES HTMLElement in D3Grid');
-						}
-
-						return value;
-					});
+				});
 		},
 
 		sortColumnChanged: {
