@@ -54,9 +54,9 @@ function _create(opt, el) {
 		formatters = {
 			plainText: function (txt) { return txt; },
 			number: function (txt) { return txt; },
-			datetime: function(d){ return moment(d).format('MMMM D YYYY, hh:mma'); },
-			date: function(d){ return moment(d).format('dddd, MMMM D YYYY'); },
-			time: function(d){ return moment(d).format('hh:mma'); },
+			datetime: function(d){ if (!d) return ''; return moment(d).format('MMMM D YYYY, hh:mma'); },
+			date: function(d){ if (!d) return ''; return moment(d).format('dddd, MMMM D YYYY'); },
+			time: function(d){ if (!d) return ''; return moment(d).format('hh:mma'); },
 			currency: function (txt) { return txt; },
 			html: function (txt) { return $('<div />').html(txt).text(); },
 			handlebars: (function () {
